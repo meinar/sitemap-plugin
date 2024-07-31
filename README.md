@@ -10,7 +10,7 @@
 ## Big thanks
 
 Goes out to the Sylius team. The core code of this plugin is created by the Sylius team.
-Unfortunately it got removed from the Sylius core. Luckily the Sylius team approved the 
+Unfortunately it got removed from the Sylius core. Luckily the Sylius team approved the
 extraction to a separate bundle.
 
 ## Features
@@ -24,26 +24,35 @@ extraction to a separate bundle.
 ## Installation
 
 1. Run `composer require stefandoorn/sitemap-plugin`.
-2. Add to `app/config/bundles.php`:
+2. Then, enable the plugin by adding it to the list of registered plugins/bundles in the `config/bundles.php` file of your project:
 
-```
-  SitemapPlugin\SitemapPlugin::class => ['all' => true],
-```
+   ```php
+   <?php
 
-3. Add to `app/config/packages/_sylius.yaml`: 
+   return [
+       // ...
+
+       Setono\DoctrineORMBatcherBundle\SetonoDoctrineORMBatcherBundle::class => ['all' => true],
+       SitemapPlugin\SitemapPlugin::class => ['all' => true],
+
+       // ...
+   ];
+   ```
+
+3. Add to `app/config/packages/_sylius.yaml`:
 
 ```
     - { resource: "@SitemapPlugin/Resources/config/config.yaml" }
 ```
 
-4. Add to `app/config/routes.yaml`: 
+4. Add to `app/config/routes.yaml`:
 
 ```
 sylius_sitemap:
     resource: "@SitemapPlugin/Resources/config/routing.yml"
 ```
 
-5. Add to `app/config/packages/sylius_sitemap.yaml`: 
+5. Add to `app/config/packages/sylius_sitemap.yaml`:
 
    -  [Default configuration](#default-configuration)
 
@@ -106,7 +115,7 @@ The request context is also important for generating the URLs inside the sitemap
 
 ## Default storage
 
-By default the sitemaps will be saved in `%kernel.root_dir%/var/sitemap`. You can change this setting 
+By default the sitemaps will be saved in `%kernel.root_dir%/var/sitemap`. You can change this setting
 by adjusting the parameter `sylius.sitemap.path`.
 
 ### Feature switches
