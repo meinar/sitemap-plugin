@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace SitemapPlugin\Provider;
 
 use Doctrine\Common\Collections\Collection;
+use Safe\Exceptions\StringsException;
+use Setono\DoctrineORMBatcher\Batch\CollectionBatchInterface;
+use Setono\DoctrineORMBatcher\Factory\BatcherFactoryInterface;
 use SitemapPlugin\Factory\AlternativeUrlFactoryInterface;
 use SitemapPlugin\Factory\UrlFactoryInterface;
 use SitemapPlugin\Generator\ProductImagesToSitemapImagesCollectionGeneratorInterface;
@@ -38,13 +41,16 @@ final class ProductUrlProvider implements UrlProviderInterface
 
     private ProductImagesToSitemapImagesCollectionGeneratorInterface $productToImageSitemapArrayGenerator;
 
+    private BatcherFactoryInterface $batcherFactory;
+
     public function __construct(
         ProductRepository $productRepository,
         RouterInterface $router,
         UrlFactoryInterface $urlFactory,
         AlternativeUrlFactoryInterface $urlAlternativeFactory,
         LocaleContextInterface $localeContext,
-        ProductImagesToSitemapImagesCollectionGeneratorInterface $productToImageSitemapArrayGenerator
+        ProductImagesToSitemapImagesCollectionGeneratorInterface $productToImageSitemapArrayGenerator,
+        BatcherFactoryInterface $batcherFactory
     ) {
         $this->productRepository = $productRepository;
         $this->router = $router;
@@ -52,6 +58,7 @@ final class ProductUrlProvider implements UrlProviderInterface
         $this->urlAlternativeFactory = $urlAlternativeFactory;
         $this->localeContext = $localeContext;
         $this->productToImageSitemapArrayGenerator = $productToImageSitemapArrayGenerator;
+        $this->batcherFactory = $batcherFactory;
     }
 
     public function getName(): string
@@ -60,7 +67,7 @@ final class ProductUrlProvider implements UrlProviderInterface
     }
 
     /**
-     * @inheritdoc
+     * @throws StringsException
      */
     public function generate(ChannelInterface $channel): iterable
     {
@@ -88,11 +95,13 @@ final class ProductUrlProvider implements UrlProviderInterface
     }
 
     /**
-     * @return array|Collection|ProductInterface[]
+     * @throws StringsException
+     *
+     * @return iterable<ProductInterface>
      */
     private function getProducts(): iterable
     {
-        return $this->productRepository->createQueryBuilder('o')
+        $qb = $this->productRepository->createQueryBuilder('o')
             ->addSelect('translation')
             ->innerJoin('o.translations', 'translation')
             ->andWhere(':channel MEMBER OF o.channels')
@@ -102,6 +111,12 @@ final class ProductUrlProvider implements UrlProviderInterface
             ->getQuery()
             ->getResult()
         ;
+
+        $batcher = $this->batcherFactory->createObjectCollectionBatcher($qb);
+
+        foreach ($batcher->getBatches() as $batch) {
+            yield from $batch->getCollection();
+        }
     }
 
     private function getLocaleCodes(): array
